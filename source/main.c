@@ -12,10 +12,25 @@ typedef enum {
 	APPSTATE_IMAGE
 } APPSTATE;
 
-int main(int argc, char* argv[])
-{
+void handleDrawing(APPSTATE currentAppState, u32 kDown, PrintConsole *bottomPrintScreen, PrintConsole *topPrintScreen) {
+	consoleSelect(bottomPrintScreen);
+	consoleClear();
+	printf("\n Use the D-Pad/Circle Pad to nagivate.\n Press A to select, B to go back.\n");
+	consoleSelect(topPrintScreen);
+
+	if (currentAppState == APPSTATE_LOADING) {
+		loadingStatePrint();
+	} else if (currentAppState == APPSTATE_MENU) {
+		menuStateHandleInput(kDown);
+		menuStatePrint();
+	}
+}
+
+int main(int argc, char* argv[]) {
 
 	gfxInitDefault();
+	gfxSetDoubleBuffering(GFX_TOP, true);
+	gfxSetDoubleBuffering(GFX_BOTTOM, true);
 
 	// Set up dual console
 	PrintConsole topPrintScreen, bottomPrintScreen;
@@ -24,10 +39,10 @@ int main(int argc, char* argv[])
 
 	APPSTATE currentAppState = APPSTATE_MENU;
 
+	handleDrawing(currentAppState, 0, &bottomPrintScreen, &topPrintScreen);
+
 	while (aptMainLoop())
 	{
-		gspWaitForVBlank();
-		gfxSwapBuffers();
 
 		hidScanInput();
 		u32 kDown = hidKeysDown();
@@ -37,26 +52,18 @@ int main(int argc, char* argv[])
 		if (kDown & KEY_START)
 			break; // break in order to end program
 
-		// if no keys are pressed and the app state is not LOADING
-		//if (!kDown && currentAppState != APPSTATE_LOADING)
-		//	continue; // Don't do anything this loop
+		// if no keys are pressed
+		if (!kDown)
+			continue; // Don't do anything this loop
 
-		//printf("\x1b[2J\x1b[H");
-
-		consoleSelect(&bottomPrintScreen);
-		consoleClear();
-		printf("\n Use the D-Pad/Circle Pad to nagivate.");
-		consoleSelect(&topPrintScreen);
-
-		if (currentAppState == APPSTATE_LOADING) {
-			loadingStatePrint();
-		} else if (currentAppState == APPSTATE_MENU) {
-			menuStateHandleInput(kDown);
-			menuStatePrint();
-		}
-
+		handleDrawing(currentAppState, kDown, &bottomPrintScreen, &topPrintScreen);
 
 		gfxFlushBuffers();
+		gfxSwapBuffers();
+		gspWaitForVBlank();
+		gfxFlushBuffers();
+		gfxSwapBuffers();
+		gspWaitForVBlank();
 	} // end aptMainLoop
 
 	gfxExit();

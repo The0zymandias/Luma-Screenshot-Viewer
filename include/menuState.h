@@ -1,7 +1,4 @@
-#ifndef MENUSTATE_H
-#define MENUSTATE_H
+#pragma once
 
 void menuStatePrint(void);
 void menuStateHandleInput(int kDown);
-
-#endif
