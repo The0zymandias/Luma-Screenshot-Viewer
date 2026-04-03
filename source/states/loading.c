@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <3ds/console.h>
 
-#include "loadingState.h"
+#include "states/loading.h"
 
 void loadingStatePrint() {
     consoleClear();

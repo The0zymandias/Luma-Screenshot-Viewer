@@ -3,69 +3,76 @@
 #include <string.h>
 #include <3ds.h>
 
-#include "loadingState.h"
-#include "menuState.h"
+#include "appstate.h"
+#include "screenshots.h"
+#include "states/menu.h"
 
-typedef enum {
-	APPSTATE_LOADING,
-	APPSTATE_MENU,
-	APPSTATE_IMAGE
-} APPSTATE;
+// The startup/inital APPSTATE can be found in appstate.c
+APPSTATE lastFrameAppState = APPSTATE_EMPTY;
 
-void handleDrawing(APPSTATE currentAppState, u32 kDown, PrintConsole *bottomPrintScreen, PrintConsole *topPrintScreen) {
-	consoleSelect(bottomPrintScreen);
-	consoleClear();
-	printf("\n Use the D-Pad/Circle Pad to nagivate.\n Press A to select, B to go back.\n");
-	consoleSelect(topPrintScreen);
-
-	if (currentAppState == APPSTATE_LOADING) {
-		loadingStatePrint();
-	} else if (currentAppState == APPSTATE_MENU) {
-		menuStateHandleInput(kDown);
-		menuStatePrint();
-	}
-}
+void handlePossibleNewAppState();
+void updateCurrentAppState(u32 kDown);
+void drawCurrentAppState(PrintConsole *top, PrintConsole *bottom);
 
 int main(int argc, char* argv[]) {
 
-	gfxInitDefault();
-	gfxSetDoubleBuffering(GFX_TOP, true);
-	gfxSetDoubleBuffering(GFX_BOTTOM, true);
+    gfxInitDefault();
 
-	// Set up dual console
-	PrintConsole topPrintScreen, bottomPrintScreen;
-	consoleInit(GFX_TOP, &topPrintScreen);
-	consoleInit(GFX_BOTTOM, &bottomPrintScreen);
+    // Set up dual console
+    PrintConsole topPrintScreen, bottomPrintScreen;
+    consoleInit(GFX_TOP, &topPrintScreen);
+    consoleInit(GFX_BOTTOM, &bottomPrintScreen);
 
-	APPSTATE currentAppState = APPSTATE_MENU;
+    loadScreenshotNames();
 
-	handleDrawing(currentAppState, 0, &bottomPrintScreen, &topPrintScreen);
+    consoleSelect(&topPrintScreen);
 
-	while (aptMainLoop())
-	{
+    while (aptMainLoop()) {
 
-		hidScanInput();
-		u32 kDown = hidKeysDown();
-		//u32 kHeld = hidKeysHeld();
-		//u32 kUp = hidKeysUp();
+        hidScanInput();
+        u32 kDown = hidKeysDown();
+        //u32 kHeld = hidKeysHeld();
+        //u32 kUp = hidKeysUp();
 
-		if (kDown & KEY_START)
-			break; // break in order to end program
+        if (kDown & KEY_START)
+            break; // break in order to end program
 
-		// if no keys are pressed
-		if (!kDown)
-			continue; // Don't do anything this loop
+        // APPSTATE stuff
+        handlePossibleNewAppState();
+        updateCurrentAppState(kDown);
+        drawCurrentAppState(&topPrintScreen, &bottomPrintScreen);
 
-		handleDrawing(currentAppState, kDown, &bottomPrintScreen, &topPrintScreen);
 
-		gfxFlushBuffers();
-		gfxSwapBuffers();
-		gspWaitForVBlank();
-		gfxFlushBuffers();
-		gfxSwapBuffers();
-		gspWaitForVBlank();
-	} // end aptMainLoop
+        lastFrameAppState = getCurrentAppState();
+    } // while (aptMainLoop())
 
-	gfxExit();
-	return 0;
+    gfxExit();
+}
+
+void handlePossibleNewAppState() {
+    if (lastFrameAppState != getCurrentAppState()) {
+        switch (getCurrentAppState()) {
+            case APPSTATE_EMPTY:
+                break;
+            case APPSTATE_MENU:
+                beginMenuState();
+                break;
+            default:
+                printf("Invalid APPSTATE: %i", getCurrentAppState());
+        }
+
+    }
+}
+
+void updateCurrentAppState(u32 kDown) {
+    switch (getCurrentAppState()) {
+        case APPSTATE_EMPTY:
+            break;
+        case APPSTATE_MENU:
+            updateMenuState(kDown);
+    }
+}
+
+void drawCurrentAppState(PrintConsole *top, PrintConsole *bottom) {
+    return;
 }

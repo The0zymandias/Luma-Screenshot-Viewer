@@ -31,12 +31,12 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
-BUILD		:=	build
-SOURCES		:=	source
-DATA		:=	data
-INCLUDES	:=	include
-GRAPHICS	:=	gfx
+TARGET      := Luma-Screenshot-Viewer
+BUILD       := build
+SOURCES     := source
+DATA        := data
+INCLUDES    := include
+GRAPHICS    := gfx
 GFXBUILD	:=	$(BUILD)
 #ROMFS		:=	romfs
 #GFXBUILD	:=	$(ROMFS)/gfx
@@ -73,17 +73,33 @@ LIBDIRS	:= $(CTRULIB)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export TOPDIR	:=	$(CURDIR)
-
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
-
+export OUTPUT := $(CURDIR)/$(TARGET)
+export TOPDIR   := $(CURDIR)
+export SOURCES_DIR := $(TOPDIR)/$(SOURCES)
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+#export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
+#			$(foreach dir,$(GRAPHICS),$(CURDIR)/$(dir)) \
+#			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+# This finds every subdirectory inside source, data, and gfx
+#export VPATH := $(shell find $(SOURCES) $(GRAPHICS) $(DATA) -type d)
+# This finds every subdirectory and turns them into absolute paths
+# Find every directory in source/ recursively and convert to absolute paths
+
+SOURCES_ABS := $(shell find $(TOPDIR)/$(SOURCES) -name "*.c" -o -name "*.cpp")
+CFILES      := $(notdir $(filter %.c,$(SOURCES_ABS)))
+CPPFILES    := $(notdir $(filter %.cpp,$(SOURCES_ABS)))
+
+# Export VPATH with absolute paths for all subdirectories
+export VPATH    := $(shell find $(TOPDIR)/$(SOURCES) $(TOPDIR)/$(GRAPHICS) $(TOPDIR)/$(DATA) -type d)
+
+# Fix INCLUDE to use the absolute TOPDIR
+export INCLUDE  := $(foreach dir,$(INCLUDES),-I$(TOPDIR)/$(dir)) \
+                   $(shell find $(TOPDIR)/$(INCLUDES) -type d -exec echo -I{} \;) \
+                   $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+                   -I$(TOPDIR)/$(BUILD)
+
+SFILES    := $(shell find $(SOURCES) -name "*.s" -exec basename {} \;)
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
@@ -129,9 +145,15 @@ export HFILES	:=	$(PICAFILES:.v.pica=_shbin.h) $(SHLISTFILES:.shlist=_shbin.h) \
 			$(addsuffix .h,$(subst .,_,$(BINFILES))) \
 			$(GFXFILES:.t3s=.h)
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+#export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+#			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+#			-I$(CURDIR)/$(BUILD)
+export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+                  $(shell find $(INCLUDES) -type d -exec echo -I{} \;) \
+                  $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+                  -I$(CURDIR)/$(BUILD)
+
+
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
@@ -198,7 +220,10 @@ $(OUTPUT).3dsx	:	$(OUTPUT).elf $(_3DSXDEPS)
 
 $(OFILES_SOURCES) : $(HFILES)
 
-$(OUTPUT).elf	:	$(OFILES)
+$(OUTPUT).elf : $(OFILES)
+	@echo "Linking $(notdir $@)..."
+	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

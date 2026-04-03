@@ -1,3 +1,3 @@
-# template
+# Luma 3DS Screenshot Viewer
 
-This is a template for starting new 3DS libctru projects.
+Am sorry I have such a fat, juicy Makefile *uuuuugh* (puts my Makefile in (the project))
