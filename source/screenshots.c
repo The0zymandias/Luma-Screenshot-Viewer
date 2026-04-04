@@ -61,7 +61,7 @@ void formatScreenshotNames() {
 }
 
 void getScreenshotNamesFromDir() {
-    numScreenshots = 22;
+    numScreenshots = 666;
     screenshotNames = malloc(numScreenshots * sizeof(char*));
     for (int i = 0; i < numScreenshots; i++) {
         screenshotNames[i] = strdup("2026-02-18_08-13-29.908");

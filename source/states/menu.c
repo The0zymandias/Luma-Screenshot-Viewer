@@ -37,7 +37,7 @@ void printBorders() {
 }
 
 void printHeader() {
-    moveCursor(3, 3);
+    moveCursor(4, 3);
     printf("%s%-34s%s", CONSOLE_CYAN, "Luma Screenshot Viewer", CONSOLE_RESET);
     printf("Page %3d/%3d", curPageIndex + 1, maxPageIndex + 1);
 }
@@ -120,6 +120,7 @@ void updateMenuState(u32 kDown) {
 
     } else if (kDown & KEY_UP) {
         // curItemIndex is unsigned so it overflows to big number if less than 0
+        // same with curPageIndex I think
         curItemIndex = (curItemIndex - 1 > itemsOnThisPage+1) ? itemsOnThisPage-1 : curItemIndex - 1;
 
     } else if (kDown & KEY_LEFT) {
@@ -129,6 +130,16 @@ void updateMenuState(u32 kDown) {
     } else if (kDown & KEY_RIGHT) {
         curItemIndex = 0;
         curPageIndex = (curPageIndex + 1) % (maxPageIndex + 1);
+
+    } else if (kDown & KEY_L) {
+        curItemIndex = 0;
+        curPageIndex = (curPageIndex - 5 > maxPageIndex) ? 0 : curPageIndex - 5;
+
+    } else if (kDown & KEY_R) {
+        curItemIndex = 0;
+        curPageIndex += 5;
+        curPageIndex = (curPageIndex > maxPageIndex) ? maxPageIndex : curPageIndex;
+
     }
 }
 
