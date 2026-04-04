@@ -4,4 +4,5 @@
 
 void beginMenuState();
 void updateMenuState(u32 kDown);
-void printMenuState();
+void printMenuStateTop();
+void printMenuStateBottom();

@@ -21,12 +21,12 @@ void moveCursor(u32 row, u32 col) {
 
 void printTopBar() {
     moveCursor(1, 1);
-    printf("%c%-46s %c\n", leftBorderChar, "- - - - - - - - - - - - - - - - - - - - - - - -", rightBorderChar);
+    printf("%c%-47s%c\n", '\\', "================================================", '/');
 }
 
 void printBottomBar() {
     moveCursor(30, 1);
-    printf("%c %-46s%c", leftBorderChar, "- - - - - - - - - - - - - - - - - - - - - - - -", rightBorderChar);
+    printf("%c%-47s%c", '/', "================================================", '\\');
 }
 
 void printBorders() {
@@ -43,58 +43,104 @@ void printHeader() {
 }
 
 void printScreenshotName(const char *name, u32 row, bool isCurItem) {
-    moveCursor(row, 3);
+    moveCursor(row, 4);
     char *lineColor = (isCurItem) ? CONSOLE_GREEN : CONSOLE_RESET;
-    printf("%s%-46.46s%s ", lineColor, name, CONSOLE_RESET);
+    printf("%s%.24s", lineColor, name);
+
+    printf("   3D: ");
+    if (row % 3 == 1) {
+        printf("Yes");
+    } else {
+        printf("No ");
+    }
+
+    printf("  Wide: ");
+    if (row % 3 == 0) {
+        printf("Yes");
+    } else {
+        printf("No ");
+    }
+
+    printf("%s", CONSOLE_RESET);
+}
+
+void printCurrentPageNames() {
+    u32 startingPageIndex = curPageIndex * itemsPerPage;
+
+    int i = 0;
+    while (i < itemsPerPage && (startingPageIndex + i) < numScreenshots) {
+        u32 currentConsoleColumn = 6 + i * 2;
+        printScreenshotName(screenshotNames[startingPageIndex + i], currentConsoleColumn + 1, i == curItemIndex);
+        i++;
+        /*
+         *   if (i == curItemIndex) {
+         *       printf("|  %s%-44.44s%s  |\n", CONSOLE_GREEN, "ITEMadaipdfuvboaidfvboaidbvoiadfvbadioufxbsfgnsfgfnsfvbaiodfvbidf", CONSOLE_RESET);
+    } else {
+        printf("|  %-44.44s  |\n", "ITEMfgsyhsrtaerihghuiaegbpiebgpieurgbpaeirugbaipdufvbasfgnsfghsfghsgdu");
+    }
+    */
+    }
+
+    // this is the funniest while loop of all time
+    while (i < itemsPerPage) {
+        moveCursor(6 + i * 2 + 1, 4);
+        printf("                                             ");
+        i++;
+    }
 }
 
 void beginMenuState() {
-    consoleClear();
 
+    maxPageIndex = numScreenshots / 11;
+    if (numScreenshots % 11 == 0 && maxPageIndex > 0)
+        maxPageIndex--;
+
+    consoleClear();
 
     printTopBar();
     printBorders();
     printHeader();
     printBottomBar();
-    printHeader();
 
-    u32 startingPageIndex = curPageIndex * itemsPerPage;
-    for (int i = 0; i < itemsPerPage && (startingPageIndex + i) < numScreenshots; i++) {
-        u32 currentConsoleColumn = 6 + i * 2;
-        printScreenshotName(screenshotNames[startingPageIndex + i], currentConsoleColumn + 1, i == curItemIndex);
-
-        /*
-        if (i == curItemIndex) {
-            printf("|  %s%-44.44s%s  |\n", CONSOLE_GREEN, "ITEMadaipdfuvboaidfvboaidbvoiadfvbadioufxbsfgnsfgfnsfvbaiodfvbidf", CONSOLE_RESET);
-        } else {
-            printf("|  %-44.44s  |\n", "ITEMfgsyhsrtaerihghuiaegbpiebgpieurgbpaeirugbaipdufvbasfgnsfghsfghsgdu");
-        }
-        */
-    }
+    printCurrentPageNames();
 }
 
 void updateMenuState(u32 kDown) {
+
+    u32 itemsOnThisPage = itemsPerPage;
+    if (curPageIndex == maxPageIndex) {
+        u32 temp = numScreenshots;
+        while (temp > 11)
+            temp -= 11;
+        itemsOnThisPage = temp;
+    }
+
     if (kDown & KEY_DOWN) {
-        curItemIndex = (curItemIndex + 1) % itemsPerPage;
+        curItemIndex = (curItemIndex + 1) % itemsOnThisPage;
+
     } else if (kDown & KEY_UP) {
-        curItemIndex -= 1;
-        if (curItemIndex > itemsPerPage-1) {
-            curItemIndex = itemsPerPage-1;
-        }
+        // curItemIndex is unsigned so it overflows to big number if less than 0
+        curItemIndex = (curItemIndex - 1 > itemsOnThisPage+1) ? itemsOnThisPage-1 : curItemIndex - 1;
+
     } else if (kDown & KEY_LEFT) {
         curItemIndex = 0;
-        curPageIndex -= 1;
-        if (curPageIndex > maxPageIndex) {
-            curPageIndex = maxPageIndex;
-        }
+        curPageIndex = (curPageIndex - 1 > maxPageIndex) ? curPageIndex = maxPageIndex : curPageIndex - 1;
+
     } else if (kDown & KEY_RIGHT) {
         curItemIndex = 0;
         curPageIndex = (curPageIndex + 1) % (maxPageIndex + 1);
     }
 }
 
-void menuStatePrint(PrintConsole *top, PrintConsole *bottom) {
-    consoleClear();
+void printMenuStateTop() {
+    printHeader();
+    printCurrentPageNames();
+}
+
+void printMenuStateBottom() {
+    return;
+}
+/*
     printf("|%-46s |\n", "- - - - - - - - - - - - - - - - - - - - - - - -"); // top line
     printf("| %-46s |\n", ""); // blank line
 
@@ -116,6 +162,4 @@ void menuStatePrint(PrintConsole *top, PrintConsole *bottom) {
     printf("| %-46s |\n", "");
     printf("| %-46s |\n", "");
     printf("| %-46s|\n", "- - - - - - - - - - - - - - - - - - - - - - - -"); // bottom line
-}
-
-
+*/
